@@ -1,0 +1,14 @@
+pid /run/sjsu-web.pid;
+error_log stderr;
+events { worker_connections 128; }
+http {
+    access_log off;
+    include /etc/nginx/mime.types;
+    server {
+        listen 8080;
+        server_name _;
+        root /var/www/sjsu-assignment;
+        index index.html;
+        location / { try_files $uri $uri/ =404; }
+    }
+}

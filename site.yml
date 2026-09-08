@@ -1,0 +1,115 @@
+---
+- name: Deploy assignment webservers
+  hosts: webservers
+  become: true
+  gather_facts: true
+  tags: [never, deploy]
+  tasks:
+    - name: Check supported OS and instance identity
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.os_family == 'Debian'
+          - instance_id | int in [1, 2]
+    - name: Install nginx without starting its default service
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+        policy_rc_d: 101
+    - name: Create assignment content directory
+      ansible.builtin.file:
+        path: /var/www/sjsu-assignment
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+    - name: Render instance-specific page
+      ansible.builtin.template:
+        src: index.html.j2
+        dest: /var/www/sjsu-assignment/index.html
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Install dedicated nginx configuration
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/sjsu-assignment.conf
+        owner: root
+        group: root
+        mode: '0644'
+        validate: /usr/sbin/nginx -t -c %s
+      notify: Restart assignment webserver
+    - name: Install assignment service
+      ansible.builtin.copy:
+        src: sjsu-web.service
+        dest: /etc/systemd/system/sjsu-web.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart assignment webserver
+    - name: Enable and start assignment service
+      ansible.builtin.systemd_service:
+        name: sjsu-web
+        state: started
+        enabled: true
+        daemon_reload: true
+    - name: Apply pending configuration changes
+      ansible.builtin.meta: flush_handlers
+    - name: Fetch page on each VM
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8080/
+        return_content: true
+      register: page
+      retries: 5
+      delay: 2
+      until: page.status | default(0) == 200
+    - name: Verify instance-specific message
+      ansible.builtin.assert:
+        that:
+          - "('Hello World from SJSU-' ~ (instance_id | string)) in page.content"
+  handlers:
+    - name: Restart assignment webserver
+      ansible.builtin.systemd_service:
+        name: sjsu-web
+        state: restarted
+        daemon_reload: true
+
+- name: Un-deploy assignment webserver resources
+  hosts: webservers
+  become: true
+  gather_facts: false
+  tags: [never, undeploy]
+  tasks:
+    - name: Inspect installed services
+      ansible.builtin.service_facts:
+    - name: Stop and disable assignment service if present
+      ansible.builtin.systemd_service:
+        name: sjsu-web
+        state: stopped
+        enabled: false
+      when: "'sjsu-web.service' in ansible_facts.services"
+    - name: Remove assignment-owned resources
+      ansible.builtin.file:
+        path: '{{ item }}'
+        state: absent
+      loop:
+        - /etc/systemd/system/sjsu-web.service
+        - /etc/nginx/sjsu-assignment.conf
+        - /var/www/sjsu-assignment
+    - name: Reload systemd after removal
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+    - name: Remove nginx packages from these dedicated lab VMs
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - nginx-common
+        state: absent
+        purge: true
+    - name: Confirm webserver port is closed
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 8080
+        state: stopped
+        timeout: 15

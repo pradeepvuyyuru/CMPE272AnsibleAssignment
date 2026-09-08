@@ -1,0 +1,6 @@
+*.pem
+*.key
+.venv/
+*.retry
+inventory.local.ini
+.DS_Store

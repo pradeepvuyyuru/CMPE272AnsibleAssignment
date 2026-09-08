@@ -1,0 +1,329 @@
+CMPE 272 - Pradeep Vuyyuru - Two VM Ansible Demo
+2026-09-08T15:34:42-07:00
+ansible [core 2.20.9]
+[webservers]
+VM1 ansible_host=192.168.56.101 instance_id=1
+VM2 ansible_host=192.168.56.102 instance_id=2
+
+[webservers:vars]
+ansible_user=student
+# Set ansible_ssh_private_key_file to your local key path if needed.
+VM1 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3.14"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+VM2 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3.14"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+
+Press Enter for the next step...DEPLOY - Install and start webservers on both VMs
+
+playbook: site.yml
+
+PLAY [Deploy assignment webservers] ********************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Check supported OS and instance identity] ********************************
+ok: [VM1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+ok: [VM2] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Install nginx without starting its default service] **********************
+changed: [VM1]
+changed: [VM2]
+
+TASK [Create assignment content directory] *************************************
+changed: [VM1]
+changed: [VM2]
+
+TASK [Render instance-specific page] *******************************************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Install dedicated nginx configuration] ***********************************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Install assignment service] **********************************************
+changed: [VM1]
+changed: [VM2]
+
+TASK [Enable and start assignment service] *************************************
+changed: [VM1]
+changed: [VM2]
+
+TASK [Apply pending configuration changes] *************************************
+
+TASK [Apply pending configuration changes] *************************************
+
+RUNNING HANDLER [Restart assignment webserver] *********************************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Fetch page on each VM] ***************************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Verify instance-specific message] ****************************************
+ok: [VM1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+ok: [VM2] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+PLAY [Un-deploy assignment webserver resources] ********************************
+
+PLAY RECAP *********************************************************************
+VM1                        : ok=11   changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+VM2                        : ok=11   changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+
+Press Enter for the next step...REPEAT DEPLOY - Check changed=0 for both hosts
+
+PLAY [Deploy assignment webservers] ********************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [VM1]
+ok: [VM2]
+
+TASK [Check supported OS and instance identity] ********************************
+ok: [VM1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+ok: [VM2] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Install nginx without starting its default service] **********************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Create assignment content directory] *************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Render instance-specific page] *******************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Install dedicated nginx configuration] ***********************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Install assignment service] **********************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Enable and start assignment service] *************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Apply pending configuration changes] *************************************
+
+TASK [Apply pending configuration changes] *************************************
+
+TASK [Fetch page on each VM] ***************************************************
+ok: [VM1]
+ok: [VM2]
+
+TASK [Verify instance-specific message] ****************************************
+ok: [VM1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+ok: [VM2] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+PLAY [Un-deploy assignment webserver resources] ********************************
+
+PLAY RECAP *********************************************************************
+VM1                        : ok=10   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+VM2                        : ok=10   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+
+Press Enter for the next step...HTTP CHECK - VM1 and VM2 on port 8080
+VM1: http://192.168.56.101:8080
+   CMPE 272 · Ansible deployment · VM1  Hello World from SJSU-1  Webserver listening on port 8080.   
+VM2: http://192.168.56.102:8080
+   CMPE 272 · Ansible deployment · VM2  Hello World from SJSU-2  Webserver listening on port 8080.   
+Open both addresses in a browser to verify the pages.
+
+Press Enter for the next step...UN-DEPLOY - Remove service, files, and nginx packages
+
+PLAY [Deploy assignment webservers] ********************************************
+
+PLAY [Un-deploy assignment webserver resources] ********************************
+
+TASK [Inspect installed services] **********************************************
+ok: [VM1]
+ok: [VM2]
+
+TASK [Stop and disable assignment service if present] **************************
+changed: [VM1]
+changed: [VM2]
+
+TASK [Remove assignment-owned resources] ***************************************
+changed: [VM2] => (item=/etc/systemd/system/sjsu-web.service)
+changed: [VM1] => (item=/etc/systemd/system/sjsu-web.service)
+changed: [VM2] => (item=/etc/nginx/sjsu-assignment.conf)
+changed: [VM1] => (item=/etc/nginx/sjsu-assignment.conf)
+changed: [VM1] => (item=/var/www/sjsu-assignment)
+changed: [VM2] => (item=/var/www/sjsu-assignment)
+
+TASK [Reload systemd after removal] ********************************************
+ok: [VM1]
+ok: [VM2]
+
+TASK [Remove nginx packages from these dedicated lab VMs] **********************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Confirm webserver port is closed] ****************************************
+ok: [VM2]
+ok: [VM1]
+
+PLAY RECAP *********************************************************************
+VM1                        : ok=6    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+VM2                        : ok=6    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+VM1: port 8080 unavailable, as expected
+VM2: port 8080 unavailable, as expected
+
+Press Enter for the next step...REPEAT UN-DEPLOY - Already absent resources stay absent
+
+PLAY [Deploy assignment webservers] ********************************************
+
+PLAY [Un-deploy assignment webserver resources] ********************************
+
+TASK [Inspect installed services] **********************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Stop and disable assignment service if present] **************************
+skipping: [VM1]
+skipping: [VM2]
+
+TASK [Remove assignment-owned resources] ***************************************
+ok: [VM1] => (item=/etc/systemd/system/sjsu-web.service)
+ok: [VM2] => (item=/etc/systemd/system/sjsu-web.service)
+ok: [VM2] => (item=/etc/nginx/sjsu-assignment.conf)
+ok: [VM1] => (item=/etc/nginx/sjsu-assignment.conf)
+ok: [VM2] => (item=/var/www/sjsu-assignment)
+ok: [VM1] => (item=/var/www/sjsu-assignment)
+
+TASK [Reload systemd after removal] ********************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Remove nginx packages from these dedicated lab VMs] **********************
+ok: [VM1]
+ok: [VM2]
+
+TASK [Confirm webserver port is closed] ****************************************
+ok: [VM2]
+ok: [VM1]
+
+PLAY RECAP *********************************************************************
+VM1                        : ok=5    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+VM2                        : ok=5    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+
+
+Press Enter for the next step...RESTORE - Deploy again after removal
+
+PLAY [Deploy assignment webservers] ********************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Check supported OS and instance identity] ********************************
+ok: [VM1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+ok: [VM2] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Install nginx without starting its default service] **********************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Create assignment content directory] *************************************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Render instance-specific page] *******************************************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Install dedicated nginx configuration] ***********************************
+changed: [VM1]
+changed: [VM2]
+
+TASK [Install assignment service] **********************************************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Enable and start assignment service] *************************************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Apply pending configuration changes] *************************************
+
+TASK [Apply pending configuration changes] *************************************
+
+RUNNING HANDLER [Restart assignment webserver] *********************************
+changed: [VM2]
+changed: [VM1]
+
+TASK [Fetch page on each VM] ***************************************************
+ok: [VM2]
+ok: [VM1]
+
+TASK [Verify instance-specific message] ****************************************
+ok: [VM1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+ok: [VM2] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+PLAY [Un-deploy assignment webserver resources] ********************************
+
+PLAY RECAP *********************************************************************
+VM1                        : ok=11   changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+VM2                        : ok=11   changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+VM1: http://192.168.56.101:8080
+   CMPE 272 · Ansible deployment · VM1  Hello World from SJSU-1  Webserver listening on port 8080.   
+VM2: http://192.168.56.102:8080
+   CMPE 272 · Ansible deployment · VM2  Hello World from SJSU-2  Webserver listening on port 8080.   
+Demo complete. Both webservers are running.
+
+Press Enter for the next step...

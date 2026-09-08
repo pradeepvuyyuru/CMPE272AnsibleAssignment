@@ -1,0 +1,13 @@
+[Unit]
+Description=SJSU assignment webserver on port 8080
+After=network.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/sbin/nginx -t -c /etc/nginx/sjsu-assignment.conf
+ExecStart=/usr/sbin/nginx -c /etc/nginx/sjsu-assignment.conf -g "daemon off;"
+Restart=on-failure
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
